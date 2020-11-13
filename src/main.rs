@@ -10,7 +10,7 @@ fn main() {
     file.read_to_string(&mut contents).expect("Reading the file contents");
 
     let result = convert(contents);
-    println!("result:\n {}", result.expect("Unwrap result"));
+    println!("{}", result.expect("Unwrap result"));
 }
 
 fn convert(code: String) -> Result<String, ()> {
@@ -23,7 +23,6 @@ fn convert(code: String) -> Result<String, ()> {
         let tok = tokens.next(); // token を進める
         match tok {
             Some(tok) => {
-                println!("tok {}", tok);
                 match tok {
                     "class" => {
                         let name = tokens.next();
@@ -34,6 +33,37 @@ fn convert(code: String) -> Result<String, ()> {
                         // TODO: props の生成に必要?
                         code = format!("{}) => {}", code, "{");
                         indents = indents + 1;
+                    },
+                    "render()" => {
+                        tokens.next(); // {
+                        tokens.next(); // return
+                        tokens.next(); // (
+
+                        let indent = "  ".repeat(indents); // 2タブ派なので \t は使わない! (素振り)
+                        code = format!("{}\n{}return (", code, indent);
+                        indents = indents + 1;
+
+                        loop {
+                            match tokens.next() {
+                                Some(value) => {
+                                    if value == ")" {
+                                        break;
+                                    }
+
+                                    let indent = "  ".repeat(indents);
+                                    code = format!("{}\n{}{}", code, indent, value);
+                                },
+                                None => break,
+                            };
+                        }
+
+                        indents = indents - 1;
+                        let indent = "  ".repeat(indents);
+                        code = format!("{}\n{})", code, indent);
+
+                        indents = indents - 1;
+                        let indent = "  ".repeat(indents);
+                        code = format!("{}\n{}{}", code, indent, "}");
                     },
                     _ => {},
                 };
