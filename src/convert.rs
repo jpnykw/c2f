@@ -1,14 +1,17 @@
 extern crate regex;
 use regex::Regex;
 
+// インデントに使う文字を指定する（現在は4タブ）
+const INDENT: &str = "    ";
+
 enum IndentMode {
     INC,
     DEC,
-    NONE,
 }
 
 trait Handle {
     fn update(&mut self, mode: IndentMode) -> String;
+    fn get(self) -> String;
 }
 
 impl Handle for usize {
@@ -16,9 +19,12 @@ impl Handle for usize {
         *self = match mode {
             IndentMode::INC => *self + 1,
             IndentMode::DEC => *self - 1,
-            IndentMode::NONE => *self,
         };
-        "    ".repeat(*self)
+        INDENT.repeat(*self)
+    }
+
+    fn get(self) -> String {
+        INDENT.repeat(self)
     }
 }
 
@@ -41,7 +47,8 @@ pub fn convert(code: String) -> Result<String, ()> {
     let mut indents: usize = 0;
 
     loop {
-        let tok = tokens.next(); // token を進める
+        // token を進める
+        let tok = tokens.next();
         match tok {
             Some(tok) => {
                 match tok {
@@ -56,21 +63,18 @@ pub fn convert(code: String) -> Result<String, ()> {
                         indents.update(IndentMode::INC);
                     },
                     "render" => {
-                        // return までのトークンを一気に無視（これで空白の有無に関わらず動くはず）
+                        // return までの token を一気に無視（これで空白の有無に関わらず動くはず）
                         loop {
                             let tok = tokens.next();
                             if tok.unwrap().contains("return") { break; }
                         }
 
-                        code = format!("{}\n{}return (", code, indents.update(IndentMode::NONE));
+                        code = format!("{}\n{}return (", code, indents.get());
                         indents.update(IndentMode::INC);
 
                         loop {
                             match tokens.next() {
                                 Some(value) => {
-                                    if value == "(" { continue; }
-                                    if value == ")" { break; }
-
                                     if value.contains(">") {
                                         let mut dom_tokens = value.split(">");
                                         loop {
@@ -86,7 +90,7 @@ pub fn convert(code: String) -> Result<String, ()> {
                                                                     code = format!("{}\n{}<{}>", code, indents.update(IndentMode::DEC), dom);
                                                                 } else {
                                                                     // 開始タグ
-                                                                    code = format!("{}\n{}<{}>", code, indents.update(IndentMode::NONE), dom);
+                                                                    code = format!("{}\n{}<{}>", code, indents.get(), dom);
                                                                     indents.update(IndentMode::INC);
                                                                 }
                                                             },
@@ -97,7 +101,7 @@ pub fn convert(code: String) -> Result<String, ()> {
                                             };
                                         }
                                     } else {
-                                        code = format!("{}\n{}{}", code, indents.update(IndentMode::NONE), value);
+                                        code = format!("{}\n{}{}", code, indents.get(), value);
                                     }
                                 },
                                 None => break,
