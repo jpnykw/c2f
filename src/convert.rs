@@ -49,7 +49,7 @@ pub fn convert(code: String) -> Result<String, ()> {
                         code = format!("{}) => {}", code, "{");
                         indents.update(IndentMode::INC);
                     },
-                    "render" | "render()" => {
+                    "render" => {
                         // return までのトークンを一気に無視（これで空白の有無に関わらず動くはず）
                         loop {
                             let tok = tokens.next();
@@ -59,6 +59,9 @@ pub fn convert(code: String) -> Result<String, ()> {
                         code = format!("{}\n{}return (", code, indents.update(IndentMode::NONE));
                         indents.update(IndentMode::INC);
 
+                        // TODO: return () 内部のインデントに対応する
+                        // TODO: もし DOM がワンライナーで書かれている場合も開始/終了タグを見て
+                        // TODO: 変換の際にインデントを付け足したい
                         loop {
                             match tokens.next() {
                                 Some(value) => {
@@ -110,7 +113,21 @@ mod tests {
     #[test]
     fn test_case_render_only_without_whitespace() {
         let target = load_file("./test/render_only/cls_2.tsx");
-        let answer = load_file("./test/render_only/fun_1.tsx");
+        let answer = load_file("./test/render_only/fun_2.tsx"); // fun_1 と全く同じ
+        assert_eq!(convert(target.unwrap()), answer);
+    }
+
+    #[test]
+    fn test_case_multi_contents_with_whitespace() {
+        let target = load_file("./test/multi_contents/cls_1.tsx");
+        let answer = load_file("./test/multi_contents/fun_1.tsx");
+        assert_eq!(convert(target.unwrap()), answer);
+    }
+
+    #[test]
+    fn test_case_multi_contents_without_whitespace() {
+        let target = load_file("./test/multi_contents/cls_2.tsx");
+        let answer = load_file("./test/multi_contents/fun_2.tsx");
         assert_eq!(convert(target.unwrap()), answer);
     }
 }
