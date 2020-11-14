@@ -1,5 +1,7 @@
 const Component = () => {
     return (
-        <div>Contents</div>
+        <div>
+            Contents
+        </div>
     )
 }
