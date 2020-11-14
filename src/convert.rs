@@ -42,10 +42,12 @@ pub fn convert(code: String) -> Result<String, ()> {
                         code = format!("{}) => {}", code, "{");
                         indents.update(IndentMode::INC);
                     },
-                    "render()" => {
-                        tokens.next(); // {
-                        tokens.next(); // return
-                        tokens.next(); // (
+                    "render" | "render()" => {
+                        // return までのトークンを一気に無視（これで空白の有無に関わらず動くはず）
+                        loop {
+                            let tok = tokens.next();
+                            if tok.unwrap().contains("return") { break; }
+                        }
 
                         code = format!("{}\n{}return (", code, indents.update(IndentMode::NONE));
                         indents.update(IndentMode::INC);
@@ -53,6 +55,7 @@ pub fn convert(code: String) -> Result<String, ()> {
                         loop {
                             match tokens.next() {
                                 Some(value) => {
+                                    if value == "(" { continue; }
                                     if value == ")" { break; }
                                     code = format!("{}\n{}{}", code, indents.update(IndentMode::NONE), value);
                                 },
@@ -91,9 +94,9 @@ mod tests {
     }
 
     #[test]
-    fn test_case_render_only() {
-        let target = load_file("./test/cls_render_only.tsx");
-        let answer = load_file("./test/fun_render_only.tsx");
+    fn test_case_render_only_with_whitespace() {
+        let target = load_file("./test/render_only/cls_1.tsx");
+        let answer = load_file("./test/render_only/fun_1.tsx");
         assert_eq!(convert(target.unwrap()), answer);
     }
 }
