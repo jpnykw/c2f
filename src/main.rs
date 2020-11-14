@@ -35,38 +35,28 @@ fn convert(code: String) -> Result<String, ()> {
                         // TODO: 継承元のプロパティを捜査する?
                         // TODO: props の生成に必要?
                         code = format!("{}) => {}", code, "{");
-                        indents = indents + 1;
+                        indents.update(IndentMode::INC);
                     },
                     "render()" => {
                         tokens.next(); // {
                         tokens.next(); // return
                         tokens.next(); // (
 
-                        let indent = "  ".repeat(indents); // 2タブ派なので \t は使わない! (素振り)
-                        code = format!("{}\n{}return (", code, indent);
-                        indents = indents + 1;
+                        code = format!("{}\n{}return (", code, indents.update(IndentMode::NONE));
+                        indents.update(IndentMode::INC);
 
                         loop {
                             match tokens.next() {
                                 Some(value) => {
-                                    if value == ")" {
-                                        break;
-                                    }
-
-                                    let indent = "  ".repeat(indents);
-                                    code = format!("{}\n{}{}", code, indent, value);
+                                    if value == ")" { break; }
+                                    code = format!("{}\n{}{}", code, indents.update(IndentMode::NONE), value);
                                 },
                                 None => break,
                             };
                         }
 
-                        indents = indents - 1;
-                        let indent = "  ".repeat(indents);
-                        code = format!("{}\n{})", code, indent);
-
-                        indents = indents - 1;
-                        let indent = "  ".repeat(indents);
-                        code = format!("{}\n{}{}", code, indent, "}");
+                        code = format!("{}\n{})", code, indents.update(IndentMode::DEC));
+                        code = format!("{}\n{}{}", code, indents.update(IndentMode::DEC), "}");
                     },
                     _ => {},
                 };
@@ -82,17 +72,20 @@ fn convert(code: String) -> Result<String, ()> {
 enum IndentMode {
     INC,
     DEC,
+    NONE,
 }
 
 trait Handle {
-    fn update(&mut self, mode: IndentMode);
+    fn update(&mut self, mode: IndentMode) -> String;
 }
 
 impl Handle for usize {
-    fn update(&mut self, mode: IndentMode) {
+    fn update(&mut self, mode: IndentMode) -> String {
         *self = match mode {
             IndentMode::INC => *self + 1,
             IndentMode::DEC => *self - 1,
+            IndentMode::NONE => *self,
         };
+        "  ".repeat(*self)
     }
 }
