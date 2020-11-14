@@ -11,5 +11,5 @@ fn main() {
     file.read_to_string(&mut contents).expect("Reading the file contents");
 
     let result = convert::convert(contents);
-    println!("{}", result.expect("Unwrap result"));
+    println!("\n{}", result.expect("Unwrap result"));
 }

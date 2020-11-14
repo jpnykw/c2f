@@ -1,3 +1,6 @@
+extern crate regex;
+use regex::Regex;
+
 enum IndentMode {
     INC,
     DEC,
@@ -19,6 +22,7 @@ impl Handle for usize {
     }
 }
 
+// TODO: リファクタリングする（取りあえずは動くもの最優先する）
 pub fn convert(code: String) -> Result<String, ()> {
     // 詰めて書かれたコードに対応するためにこれらのトークンを空白に変換しておく（仮）
     // 前処理として Linter を走らせるという手もあるかも（要検証）
@@ -26,13 +30,15 @@ pub fn convert(code: String) -> Result<String, ()> {
     let code = code.replace(")", " ");
     let code = code.replace("{", " ");
     let code = code.replace("}", " ");
+    // DOMの前後に改行を入れる
+    let reg = Regex::new(r">([^\n])").unwrap();
+    let code = reg.replace_all(&code, ">\n$1");
+    let reg = Regex::new(r"([^\n]+)</").unwrap();
+    let code = reg.replace_all(&code, "$1\n</");
     // 前処理した上で分解する
     let mut tokens = code.split_whitespace();
     let mut code: String = String::new();
     let mut indents: usize = 0;
-
-    indents.update(IndentMode::INC);
-    indents.update(IndentMode::DEC);
 
     loop {
         let tok = tokens.next(); // token を進める
@@ -59,15 +65,40 @@ pub fn convert(code: String) -> Result<String, ()> {
                         code = format!("{}\n{}return (", code, indents.update(IndentMode::NONE));
                         indents.update(IndentMode::INC);
 
-                        // TODO: return () 内部のインデントに対応する
-                        // TODO: もし DOM がワンライナーで書かれている場合も開始/終了タグを見て
-                        // TODO: 変換の際にインデントを付け足したい
                         loop {
                             match tokens.next() {
                                 Some(value) => {
                                     if value == "(" { continue; }
                                     if value == ")" { break; }
-                                    code = format!("{}\n{}{}", code, indents.update(IndentMode::NONE), value);
+
+                                    if value.contains(">") {
+                                        let mut dom_tokens = value.split(">");
+                                        loop {
+                                            let data = dom_tokens.next();
+                                            match data {
+                                                Some(data) => {
+                                                    let mut data = data.split("<");
+                                                    data.next().unwrap();
+                                                    match data.next() {
+                                                            Some(dom) => {
+                                                                if dom.contains("/") {
+                                                                    // 終了タグ
+                                                                    code = format!("{}\n{}<{}>", code, indents.update(IndentMode::DEC), dom);
+                                                                } else {
+                                                                    // 開始タグ
+                                                                    code = format!("{}\n{}<{}>", code, indents.update(IndentMode::NONE), dom);
+                                                                    indents.update(IndentMode::INC);
+                                                                }
+                                                            },
+                                                            None => {},
+                                                        };
+                                                },
+                                                None => break,
+                                            };
+                                        }
+                                    } else {
+                                        code = format!("{}\n{}{}", code, indents.update(IndentMode::NONE), value);
+                                    }
                                 },
                                 None => break,
                             };
@@ -127,7 +158,7 @@ mod tests {
     #[test]
     fn test_case_multi_contents_without_whitespace() {
         let target = load_file("./test/multi_contents/cls_2.tsx");
-        let answer = load_file("./test/multi_contents/fun_2.tsx");
+        let answer = load_file("./test/multi_contents/fun_2.tsx"); // fun_1 と全く同じ
         assert_eq!(convert(target.unwrap()), answer);
     }
 }
