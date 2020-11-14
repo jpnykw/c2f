@@ -15,15 +15,14 @@ impl Handle for usize {
             IndentMode::DEC => *self - 1,
             IndentMode::NONE => *self,
         };
-        "  ".repeat(*self)
+        "    ".repeat(*self)
     }
 }
 
 pub fn convert(code: String) -> Result<String, ()> {
-    let mut tokens = code.split_whitespace();//.iter();
+    let mut tokens = code.split_whitespace();
     let mut code: String = String::new();
     let mut indents: usize = 0;
-    // println!("tok {:?}", tokens.next());
 
     indents.update(IndentMode::INC);
     indents.update(IndentMode::DEC);
@@ -35,7 +34,7 @@ pub fn convert(code: String) -> Result<String, ()> {
                 match tok {
                     "class" => {
                         let name = tokens.next();
-                        code = format!("{}\nconst {} = (", code, name.expect("Unwrap component name"));
+                        code = format!("{}const {} = (", code, name.expect("Unwrap component name"));
                         tokens.next(); // extends
                         let extend = tokens.next(); // 継承元
                         // TODO: 継承元のプロパティを捜査する?
@@ -71,6 +70,30 @@ pub fn convert(code: String) -> Result<String, ()> {
         };
     }
 
-    // Ok(String::new())
+    code = format!("{}\n", code);
     Ok(code)
+}
+
+#[cfg(test)]
+mod tests {
+    use std::env;
+    use std::fs::File;
+    use std::io::prelude::*;
+    use super::*;
+
+    fn load_file(path: impl AsRef<str>) -> Result<String, ()> {
+        let mut file = File::open(path.as_ref()).expect("File not found");
+        let mut contents: String = String::new();
+        match file.read_to_string(&mut contents) {
+            Ok(_) => Ok(contents),
+            Err(_) => Err(()),
+        }
+    }
+
+    #[test]
+    fn test_case_render_only() {
+        let target = load_file("./test/cls_render_only.tsx");
+        let answer = load_file("./test/fun_render_only.tsx");
+        assert_eq!(convert(target.unwrap()), answer);
+    }
 }
