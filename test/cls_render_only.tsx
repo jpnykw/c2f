@@ -1,4 +1,3 @@
-// Test
 class Component extends React.Component {
     render() {
         return (
