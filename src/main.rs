@@ -15,9 +15,12 @@ fn main() {
 
 fn convert(code: String) -> Result<String, ()> {
     let mut tokens = code.split_whitespace();//.iter();
-    let mut code = String::new();
-    let mut indents = 0;
+    let mut code: String = String::new();
+    let mut indents: usize = 0;
     // println!("tok {:?}", tokens.next());
+
+    indents.update(IndentMode::INC);
+    indents.update(IndentMode::DEC);
 
     loop {
         let tok = tokens.next(); // token を進める
@@ -74,4 +77,22 @@ fn convert(code: String) -> Result<String, ()> {
 
     // Ok(String::new())
     Ok(code)
+}
+
+enum IndentMode {
+    INC,
+    DEC,
+}
+
+trait Handle {
+    fn update(&mut self, mode: IndentMode);
+}
+
+impl Handle for usize {
+    fn update(&mut self, mode: IndentMode) {
+        *self = match mode {
+            IndentMode::INC => *self + 1,
+            IndentMode::DEC => *self - 1,
+        };
+    }
 }
