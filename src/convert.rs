@@ -10,17 +10,16 @@ enum IndentMode {
 }
 
 trait Handle {
-    fn update(&mut self, mode: IndentMode) -> String;
+    fn set(&mut self, mode: IndentMode);
     fn get(self) -> String;
 }
 
 impl Handle for usize {
-    fn update(&mut self, mode: IndentMode) -> String {
+    fn set(&mut self, mode: IndentMode) {
         *self = match mode {
             IndentMode::INC => *self + 1,
             IndentMode::DEC => *self - 1,
         };
-        INDENT.repeat(*self)
     }
 
     fn get(self) -> String {
@@ -60,7 +59,7 @@ pub fn convert(code: String) -> Result<String, ()> {
                         // TODO: 継承元のプロパティを捜査する?
                         // TODO: props の生成に必要?
                         code = format!("{}) => {}", code, "{");
-                        indents.update(IndentMode::INC);
+                        indents.set(IndentMode::INC);
                     },
                     "render" => {
                         // return までの token を一気に無視（これで空白の有無に関わらず動くはず）
@@ -70,7 +69,7 @@ pub fn convert(code: String) -> Result<String, ()> {
                         }
 
                         code = format!("{}\n{}return (", code, indents.get());
-                        indents.update(IndentMode::INC);
+                        indents.set(IndentMode::INC);
 
                         loop {
                             match tokens.next() {
@@ -87,11 +86,12 @@ pub fn convert(code: String) -> Result<String, ()> {
                                                             Some(dom) => {
                                                                 if dom.contains("/") {
                                                                     // 終了タグ
-                                                                    code = format!("{}\n{}<{}>", code, indents.update(IndentMode::DEC), dom);
+                                                                    indents.set(IndentMode::DEC);
+                                                                    code = format!("{}\n{}<{}>", code, indents.get(), dom);
                                                                 } else {
                                                                     // 開始タグ
                                                                     code = format!("{}\n{}<{}>", code, indents.get(), dom);
-                                                                    indents.update(IndentMode::INC);
+                                                                    indents.set(IndentMode::INC);
                                                                 }
                                                             },
                                                             None => {},
@@ -108,8 +108,10 @@ pub fn convert(code: String) -> Result<String, ()> {
                             };
                         }
 
-                        code = format!("{}\n{})", code, indents.update(IndentMode::DEC));
-                        code = format!("{}\n{}{}", code, indents.update(IndentMode::DEC), "}");
+                        indents.set(IndentMode::DEC);
+                        code = format!("{}\n{})", code, indents.get());
+                        indents.set(IndentMode::DEC);
+                        code = format!("{}\n{}{}", code, indents.get(), "}");
                     },
                     _ => {},
                 };
