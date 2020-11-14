@@ -20,6 +20,13 @@ impl Handle for usize {
 }
 
 pub fn convert(code: String) -> Result<String, ()> {
+    // 詰めて書かれたコードに対応するためにこれらのトークンを空白に変換しておく（仮）
+    // 前処理として Linter を走らせるという手もあるかも（要検証）
+    let code = code.replace("(", " ");
+    let code = code.replace(")", " ");
+    let code = code.replace("{", " ");
+    let code = code.replace("}", " ");
+    // 前処理した上で分解する
     let mut tokens = code.split_whitespace();
     let mut code: String = String::new();
     let mut indents: usize = 0;
@@ -96,6 +103,13 @@ mod tests {
     #[test]
     fn test_case_render_only_with_whitespace() {
         let target = load_file("./test/render_only/cls_1.tsx");
+        let answer = load_file("./test/render_only/fun_1.tsx");
+        assert_eq!(convert(target.unwrap()), answer);
+    }
+
+    #[test]
+    fn test_case_render_only_without_whitespace() {
+        let target = load_file("./test/render_only/cls_2.tsx");
         let answer = load_file("./test/render_only/fun_1.tsx");
         assert_eq!(convert(target.unwrap()), answer);
     }
