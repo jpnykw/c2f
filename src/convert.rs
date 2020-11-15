@@ -124,6 +124,11 @@ pub fn convert(code: String) -> Result<String, ()> {
     Ok(code)
 }
 
+// TODO: テストケースの名前と構造を変更する
+// TODO: ディレクトリ名：テストの種類
+// TODO: 各種ファイル名：case_1.tsx, case_2.tsx ... case_n.tsx
+// TODO: 期待する結果：result.tsx
+// TODO: 全テストケースはす結果が等しくなることが望ましい
 #[cfg(test)]
 mod tests {
     use std::env;
@@ -142,29 +147,29 @@ mod tests {
 
     #[test]
     fn test_case_render_only_with_whitespace() {
-        let target = load_file("./test/render_only/cls_1.tsx");
-        let answer = load_file("./test/render_only/fun_1.tsx");
+        let target = load_file("./test/render_only/case_1.tsx");
+        let answer = load_file("./test/render_only/result.tsx");
         assert_eq!(convert(target.unwrap()), answer);
     }
 
     #[test]
     fn test_case_render_only_without_whitespace() {
-        let target = load_file("./test/render_only/cls_2.tsx");
-        let answer = load_file("./test/render_only/fun_2.tsx"); // fun_1 と全く同じ
+        let target = load_file("./test/render_only/case_2.tsx");
+        let answer = load_file("./test/render_only/result.tsx");
         assert_eq!(convert(target.unwrap()), answer);
     }
 
     #[test]
     fn test_case_multi_contents_with_whitespace() {
-        let target = load_file("./test/multi_contents/cls_1.tsx");
-        let answer = load_file("./test/multi_contents/fun_1.tsx");
+        let target = load_file("./test/multi_contents/case_1.tsx");
+        let answer = load_file("./test/multi_contents/result.tsx");
         assert_eq!(convert(target.unwrap()), answer);
     }
 
     #[test]
     fn test_case_multi_contents_without_whitespace() {
-        let target = load_file("./test/multi_contents/cls_2.tsx");
-        let answer = load_file("./test/multi_contents/fun_2.tsx"); // fun_1 と全く同じ
+        let target = load_file("./test/multi_contents/case_2.tsx");
+        let answer = load_file("./test/multi_contents/result.tsx");
         assert_eq!(convert(target.unwrap()), answer);
     }
 }
