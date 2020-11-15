@@ -145,6 +145,8 @@ mod tests {
         }
     }
 
+    // Single Content (no props, only render)
+
     #[test]
     fn test_case_render_only_with_whitespace() {
         let target = load_file("./test/render_only/case_1.tsx");
@@ -160,6 +162,15 @@ mod tests {
     }
 
     #[test]
+    fn test_case_render_only_insane_indents() {
+        let target = load_file("./test/render_only/case_3.tsx");
+        let answer = load_file("./test/render_only/result.tsx");
+        assert_eq!(convert(target.unwrap()), answer);
+    }
+
+    // Multiple Contents (no props, only render)
+
+    #[test]
     fn test_case_multi_contents_with_whitespace() {
         let target = load_file("./test/multi_contents/case_1.tsx");
         let answer = load_file("./test/multi_contents/result.tsx");
@@ -169,6 +180,13 @@ mod tests {
     #[test]
     fn test_case_multi_contents_without_whitespace() {
         let target = load_file("./test/multi_contents/case_2.tsx");
+        let answer = load_file("./test/multi_contents/result.tsx");
+        assert_eq!(convert(target.unwrap()), answer);
+    }
+
+    #[test]
+    fn test_case_multi_contents_insane_indents() {
+        let target = load_file("./test/multi_contents/case_3.tsx");
         let answer = load_file("./test/multi_contents/result.tsx");
         assert_eq!(convert(target.unwrap()), answer);
     }
