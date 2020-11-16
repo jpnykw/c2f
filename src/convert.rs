@@ -4,6 +4,7 @@ use regex::Regex;
 // インデントに使う文字を指定する（現在は4タブ）
 const INDENT: &str = "    ";
 
+#[derive(PartialEq)]
 enum IndentMode {
     INC,
     DEC,
@@ -16,6 +17,7 @@ trait Handle {
 
 impl Handle for usize {
     fn set(&mut self, mode: IndentMode) {
+        if mode == IndentMode::DEC && *self == 0 { return; }
         *self = match mode {
             IndentMode::INC => *self + 1,
             IndentMode::DEC => *self - 1,
@@ -29,12 +31,12 @@ impl Handle for usize {
 
 // TODO: リファクタリングする（取りあえずは動くもの最優先する）
 pub fn convert(code: String) -> Result<String, ()> {
-    // 詰めて書かれたコードに対応するためにこれらのトークンを空白に変換しておく（仮）
+    // 詰めて書かれたコードに対応するためにこれらの token を空白に変換しておく（仮）
     // 前処理として Linter を走らせるという手もあるかも（要検証）
-    let code = code.replace("(", " ");
-    let code = code.replace(")", " ");
-    let code = code.replace("{", " ");
-    let code = code.replace("}", " ");
+    let code = code.replace("(", " ( ");
+    let code = code.replace(")", " ) ");
+    let code = code.replace("{", " { ");
+    let code = code.replace("}", " } ");
     // DOMの前後に改行を入れる
     let reg = Regex::new(r">([^\n])").unwrap();
     let code = reg.replace_all(&code, ">\n$1");
@@ -48,6 +50,7 @@ pub fn convert(code: String) -> Result<String, ()> {
     loop {
         // token を進める
         let tok = tokens.next();
+        // dbg!(tok);
         match tok {
             Some(tok) => {
                 match tok {
@@ -70,12 +73,40 @@ pub fn convert(code: String) -> Result<String, ()> {
 
                         code = format!("{}\n{}return (", code, indents.get());
                         indents.set(IndentMode::INC);
+                        // dbg!(&code);
 
                         loop {
                             match tokens.next() {
                                 Some(value) => {
-                                    if value.contains(">") {
-                                        let mut dom_tokens = value.split(">");
+                                    if value == "(" { continue; }
+                                    if value == ")" { break; }
+
+                                    if value.contains("<") {
+                                        let mut result = String::new();
+
+                                        let mut dom_tokens = if value.contains(">") {
+                                            value.split(">")
+                                        } else {
+                                            // 要素に attribute がある場合は > までの token を結合して分解
+                                            let mut spacing_flag = false;
+
+                                            loop {
+                                                let token = tokens.next().expect("Unwrap token");
+                                                dbg!(tok);
+
+                                                // 代入後には spacing を行う
+                                                let space = if token.contains("\"") {
+                                                    spacing_flag = !spacing_flag;
+                                                    if !spacing_flag { " " } else { "" }
+                                                } else { "" };
+
+                                                result = format!("{}{}{}", result, token, space);
+                                                if token.contains(">") { break; }
+                                            }
+                                            result = format!("{} {}", value, result);
+                                            result.split(">")
+                                        };
+
                                         loop {
                                             let data = dom_tokens.next();
                                             match data {
@@ -113,7 +144,10 @@ pub fn convert(code: String) -> Result<String, ()> {
                         indents.set(IndentMode::DEC);
                         code = format!("{}\n{}{}", code, indents.get(), "}");
                     },
-                    _ => {},
+                    // Otherwise で method をキャッチする
+                    token => {
+                        // TODO: method 変換を実装する
+                    },
                 };
             },
             None => break,
@@ -124,11 +158,7 @@ pub fn convert(code: String) -> Result<String, ()> {
     Ok(code)
 }
 
-// TODO: テストケースの名前と構造を変更する
-// TODO: ディレクトリ名：テストの種類
-// TODO: 各種ファイル名：case_1.tsx, case_2.tsx ... case_n.tsx
-// TODO: 期待する結果：result.tsx
-// TODO: 全テストケースはす結果が等しくなることが望ましい
+// 全ての test case は結果が等しくなる
 #[cfg(test)]
 mod tests {
     use std::env;
@@ -148,23 +178,23 @@ mod tests {
     // Single Content (no props, only render)
 
     #[test]
-    fn test_case_render_only_with_whitespace() {
-        let target = load_file("./test/render_only/case_1.tsx");
-        let answer = load_file("./test/render_only/result.tsx");
+    fn test_case_single_content_with_whitespace() {
+        let target = load_file("./test/single_content/case_1.tsx");
+        let answer = load_file("./test/single_content/result.tsx");
         assert_eq!(convert(target.unwrap()), answer);
     }
 
     #[test]
-    fn test_case_render_only_without_whitespace() {
-        let target = load_file("./test/render_only/case_2.tsx");
-        let answer = load_file("./test/render_only/result.tsx");
+    fn test_case_single_content_without_whitespace() {
+        let target = load_file("./test/single_content/case_2.tsx");
+        let answer = load_file("./test/single_content/result.tsx");
         assert_eq!(convert(target.unwrap()), answer);
     }
 
     #[test]
-    fn test_case_render_only_insane_indents() {
-        let target = load_file("./test/render_only/case_3.tsx");
-        let answer = load_file("./test/render_only/result.tsx");
+    fn test_case_single_content_insane_indents() {
+        let target = load_file("./test/single_content/case_3.tsx");
+        let answer = load_file("./test/single_content/result.tsx");
         assert_eq!(convert(target.unwrap()), answer);
     }
 
@@ -189,5 +219,16 @@ mod tests {
         let target = load_file("./test/multi_contents/case_3.tsx");
         let answer = load_file("./test/multi_contents/result.tsx");
         assert_eq!(convert(target.unwrap()), answer);
+    }
+
+    // Multiple Methods (no props, single content)
+    #[test]
+    fn test_case_multi_methods_with_whitespace() {
+        let target = load_file("./test/multi_methods/case_1.tsx");
+        let answer = load_file("./test/multi_methods/result.tsx");
+        let result = convert(target.unwrap());
+        dbg!(result);
+        // assert_eq!(result, answer);
+        assert_eq!(1, 0);
     }
 }
