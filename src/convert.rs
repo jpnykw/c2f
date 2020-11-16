@@ -97,7 +97,7 @@ pub fn convert(code: String) -> Result<String, ()> {
                                                 // 代入後には spacing を行う
                                                 let space = if token.contains("\"") {
                                                     spacing_flag = !spacing_flag;
-                                                    if !spacing_flag { " " } else { "" }
+                                                    if spacing_flag { " " } else { "" }
                                                 } else { "" };
 
                                                 result = format!("{}{}{}", result, token, space);
@@ -216,7 +216,11 @@ pub fn convert(code: String) -> Result<String, ()> {
     Ok(code)
 }
 
-// 全ての test case は結果が等しくなる
+// test case semantics
+// case 1: with indents (correct indents)
+// case 2: without indents (no spacing)
+// case 3: insane indents (WTF🤯)
+
 #[cfg(test)]
 mod tests {
     use std::env;
@@ -299,6 +303,29 @@ mod tests {
     fn test_case_multi_methods_insane_indents() {
         let target = load_file("./test/multi_methods/case_3.tsx");
         let answer = load_file("./test/multi_methods/result.tsx");
+        assert_eq!(convert(target.unwrap()), answer);
+    }
+
+    // Multiple Methods (no props, single content)
+
+    #[test]
+    fn test_case_has_attributes_with_whitespace() {
+        let target = load_file("./test/has_attributes/case_1.tsx");
+        let answer = load_file("./test/has_attributes/result.tsx");
+        assert_eq!(convert(target.unwrap()), answer);
+    }
+
+    #[test]
+    fn test_case_has_attributes_without_whitespace() {
+        let target = load_file("./test/has_attributes/case_2.tsx");
+        let answer = load_file("./test/has_attributes/result.tsx");
+        assert_eq!(convert(target.unwrap()), answer);
+    }
+
+    #[test]
+    fn test_case_has_attributes_insane_indents() {
+        let target = load_file("./test/has_attributes/case_3.tsx");
+        let answer = load_file("./test/has_attributes/result.tsx");
         assert_eq!(convert(target.unwrap()), answer);
     }
 }
