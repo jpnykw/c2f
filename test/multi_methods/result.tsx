@@ -1,8 +1,7 @@
 const Component = () => {
     const clickHandler = () => {
-        console.log('clicked');
+        console.log('clicked')
     }
-
     return (
         <div onClick={this.clickHandler}>
             Contents
