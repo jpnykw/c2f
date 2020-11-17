@@ -172,16 +172,13 @@ pub fn convert(code: String) -> Result<String, ()> {
                             let token = tokens.next();
                             match token {
                                 Some(token) => {
-                                    if token == "{" {
-                                        bracket_depth = bracket_depth + 1;
-                                    }
+                                    bracket_depth = match token {
+                                        "{" => bracket_depth + 1,
+                                        "}" => bracket_depth - 1,
+                                        _ => bracket_depth,
+                                    };
 
-                                    if token == "}" {
-                                        bracket_depth = bracket_depth - 1;
-                                        if bracket_depth == 0 {
-                                            break;
-                                        }
-                                    }
+                                    if bracket_depth == 0 { break; }
 
                                     dbg!(token);
                                     code = match token {
