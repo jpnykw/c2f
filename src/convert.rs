@@ -1,5 +1,4 @@
-extern crate regex;
-use regex::Regex;
+use super::preprocess;
 
 // インデントに使う文字を指定する（現在は4タブ）
 const INDENT: &str = "    ";
@@ -30,18 +29,10 @@ impl Handle for usize {
 }
 
 // TODO: リファクタリングする（取りあえずは動くもの最優先する）
-pub fn convert(code: String) -> Result<String, ()> {
-    let code = code.replace(";\n", "\n");
-    // 詰めて書かれた場合に対応して一部 token の前後に空白を挿入
-    let reg = Regex::new(r"([\(\)\{\}])").unwrap();
-    let code = reg.replace_all(&code, " $1 ");
-    // DOMの前後に改行を入れる
-    let reg = Regex::new(r">([^\n])").unwrap();
-    let code = reg.replace_all(&code, ">\n$1");
-    let reg = Regex::new(r"([^\n]+)</").unwrap();
-    let code = reg.replace_all(&code, "$1\n</");
+pub fn convert(code: impl AsRef<str>) -> Result<String, ()> {
     // 前処理した上で分解する
-    let mut tokens = code.split_whitespace();
+    let pre_code = preprocess::convert(code);
+    let mut tokens = pre_code.split_whitespace();
     let mut code: String = String::new();
     let mut indents: usize = 0;
 
