@@ -33,10 +33,8 @@ impl Handle for usize {
 pub fn convert(code: String) -> Result<String, ()> {
     let code = code.replace(";\n", "\n");
     // 詰めて書かれた場合に対応して一部 token の前後に空白を挿入
-    let code = code.replace("(", " ( ");
-    let code = code.replace(")", " ) ");
-    let code = code.replace("{", " { ");
-    let code = code.replace("}", " } ");
+    let reg = Regex::new(r"([\(\)\{\}])").unwrap();
+    let code = reg.replace_all(&code, " $1 ");
     // DOMの前後に改行を入れる
     let reg = Regex::new(r">([^\n])").unwrap();
     let code = reg.replace_all(&code, ">\n$1");
@@ -73,7 +71,6 @@ pub fn convert(code: String) -> Result<String, ()> {
 
                         code = format!("{}\n{}return (", code, indents.get());
                         indents.set(IndentMode::INC);
-                        // dbg!(&code);
 
                         loop {
                             match tokens.next() {
@@ -149,11 +146,6 @@ pub fn convert(code: String) -> Result<String, ()> {
                         // TODO: method 変換を実装する
                         if token == "{" || token == "}" { continue; }
 
-                        dbg!("星宮とと begin");
-                        // dbg!(tok);
-                        dbg!(token);
-                        dbg!("星宮とと end");
-
                         // TODO: 引数に対応させる
                         code = format!("{}\n{}const {} = () => {}", code, indents.get(), token, "{");
                         indents.set(IndentMode::INC);
@@ -164,7 +156,7 @@ pub fn convert(code: String) -> Result<String, ()> {
                             if tok.unwrap().contains("{") { break; }
                         }
 
-                        // } までの token を全てメソッドの中身にする
+                        // } までの token を全て method の中身にする
                         let mut bracket_depth: usize = 1;
                         let mut new_line: bool = true;
 
